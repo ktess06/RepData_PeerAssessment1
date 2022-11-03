@@ -1,25 +1,110 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: 'Reproducible Research: Peer Assessment 1'
+output: html_document
+date: "2022-11-03"
 ---
 
 
-## Loading and preprocessing the data
+## R Markdown
 
 
 
-## What is mean total number of steps taken per day?
+#Load the data
+df<- read.csv("activity.csv", na.strings="NA")
+head(df)
+
+#Process/transform the data
+df$date <- as.Date(df$date)
+df_stepping<-subset(df, !is.na(df$steps))
+head(df$date)
+head(df_stepping)
+
+#Number of steps taken per day
+stepsday <- tapply(df_stepping$steps, df_stepping$date, sum, na.rm=TRUE, simplify =T)
+stepsday
+
+#Histogram of total number of steps taken per day
+pdf("histogramtotalnumberofsteps.pdf")
+hist(x=stepsday, col="blue", breaks =20, xlab="Daily Total Steps", ylab="Frequency", main="The Distribuation of Daily Total Steps")
+dev.off()
+
+#Mean of steps
+mean(stepsday)
+
+#Median of steps
+median(stepsday)
+
+#Time series plot of 5 minute interval
+int_avg<-tapply(df_stepping$steps, df_stepping$interval, mean, na.rm=TRUE, simplify=T)
+df_ia<- data.frame(interval=as.integer(names(int_avg)), avg=int_avg)
+head(int_avg)
+head(df_ia)
+
+pdf("timeseries.pdf")
+with(df_ia, plot(interval, avg, type="s", xlab="5-Minute Intervals", ylab="Average Steps in the Interval Across All Days"))
+
+dev.off()
+
+#Which 5 minute interval contains the maximum number of step
+max_steps5 <- max(df_ia$avg)
+df_ia[df_ia$avg==max_steps5,]
+head(max_steps5)
+
+#Numberof missing values
+sum(is.na(df$steps))
+
+#Filling in missing values
+df_addinvalue<-df
+ndx<-is.na(df_addinvalue$steps)
+int_avg<-tapply(df_stepping$steps, df_stepping$interval, mean, na.rm=TRUE, simplify=T)
+df_addinvalue$steps[ndx]<-int_avg[as.character(df_addinvalue$interval[ndx])]
+head(df_addinvalue)
+
+#Histogram with missing data numbers
+stepsdaymiss <- tapply(df_addinvalue$steps, df_addinvalue$date, sum, na.rm=TRUE, simplify =T)
+stepsdaymiss
+
+pdf("histogrammissingdata.pdf")
+
+hist(x=stepsdaymiss, col="blue", breaks =20, xlab="Daily Total Steps", ylab="Frequency", main="The Distribuation of Daily Total Steps")
+
+dev.off()
+
+#Mean of steps
+mean(stepsdaymiss)
+
+#Median of steps
+median(stepsdaymiss)
+
+#The mean is the same and the median changed to to be closer to the mean
+
+#Are there differences in activity patterns between weekdays and weekends?
+
+isitweekday<-function(d){wd<-weekdays(d) 
+ifelse (wd=="Saturday" | wd=="Sunday", "weekend", "weekday")}
+
+wx<-sapply(df_addinvalue$date, isitweekday)
+df_addinvalue$wk<-as.factor(wx)
+head(df_addinvalue)
+
+#Panel plot with time series plot of the 5 minute interval
+
+wk_df <- aggregate(steps ~ wk+interval, data=df_addinvalue, FUN=mean)
+
+library(lattice)
+
+pdf("panelplotweekdayweekend.pdf")
+
+xyplot(steps ~ interval | factor(wk),
+       layout = c(1, 2),
+       xlab="Interval",
+       ylab="Number of steps",
+       type="l",
+       lty=1,
+       data=wk_df)
+       
+       dev.off()
+       
 
 
 
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
